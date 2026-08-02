@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ブーケシミュレーター | O'lkapulia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ivory:#F7F1E8;
+    --ivory-deep:#F1E7D8;
+    --plum:#3C2A35;
+    --rose:#C48A94;
+    --rose-deep:#7B2D3B;
+    --sage:#8A9B6E;
+    --gold:#B08D57;
+    --line:rgba(60,42,53,0.14);
+    --shadow: 0 10px 30px rgba(60,42,53,0.12);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 500px at 50% -10%, #fffaf2 0%, var(--ivory) 55%),
+      var(--ivory);
+    color:var(--plum);
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .app{max-width:920px;margin:0 auto;padding:20px 16px 40px;}
+
+  header.brand{text-align:center;padding:10px 0 18px;}
+  header.brand .mark{
+    font-family:'Shippori Mincho', serif;
+    font-size:30px;
+    letter-spacing:0.06em;
+    color:var(--plum);
+  }
+  header.brand .mark em{font-style:normal;color:var(--rose-deep);}
+  header.brand .tag{
+    margin-top:6px;font-size:12.5px;letter-spacing:0.14em;color:#8a7a80;
+  }
+  header.brand .rule{
+    width:64px;height:1px;background:var(--gold);margin:14px auto 0;opacity:0.7;
+  }
+
+  .stage-wrap{
+    position:relative;
+    border-radius:22px;
+    background:
+      radial-gradient(circle at 50% 38%, rgba(255,255,255,0.9), rgba(255,255,255,0) 60%),
+      linear-gradient(180deg, #fffdf9, #f3e9da);
+    box-shadow: var(--shadow), inset 0 0 0 1px var(--line);
+    overflow:hidden;
+  }
+  #stage{
+    display:block;
+    width:100%;
+    height:56vh;
+    min-height:340px;
+    max-height:520px;
+    touch-action:none;
+    cursor:default;
+  }
+  .hint{
+    position:absolute; left:14px; bottom:12px;
+    font-size:11.5px; color:#9a8c92; letter-spacing:0.02em;
+    background:rgba(255,255,255,0.55); backdrop-filter: blur(3px);
+    padding:6px 10px; border-radius:20px; line-height:1.5;
+    pointer-events:none;
+  }
+  .price-tag{
+    position:absolute; top:14px; right:14px;
+    display:flex; flex-direction:column; align-items:flex-end;
+    background:#fffaf3; border:1px solid var(--line); border-radius:14px 14px 14px 4px;
+    box-shadow: var(--shadow);
+    padding:9px 14px;
+    pointer-events:none;
+  }
+  .price-tag .label{font-size:10px;letter-spacing:0.12em;color:#9a8c92;}
+  .price-tag .value{font-family:'Shippori Mincho',serif;font-size:20px;color:var(--rose-deep);margin-top:1px;}
+
+  .empty-msg{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    text-align:center; color:#b3a49a; font-size:13px; letter-spacing:0.06em;
+    pointer-events:none;
+  }
+
+  .toolbar{display:flex; gap:8px; justify-content:flex-end; margin:12px 2px 4px;}
+  .btn{
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    font-size:12.5px; letter-spacing:0.04em;
+    border:1px solid var(--line); background:#fff; color:var(--plum);
+    padding:8px 14px; border-radius:999px; cursor:pointer;
+    transition:transform .12s ease, background .12s ease;
+  }
+  .btn:hover{background:var(--ivory-deep);}
+  .btn:active{transform:scale(0.96);}
+  .btn.primary{background:var(--plum); color:#fff; border-color:var(--plum);}
+  .btn.primary:hover{background:#2c1f27;}
+
+  .panel{margin-top:16px;}
+  .panel h2{
+    font-family:'Shippori Mincho', serif; font-weight:600; font-size:15px;
+    margin:0 0 10px 4px; color:var(--plum); letter-spacing:0.04em;
+  }
+  .flower-row{
+    display:flex; gap:10px; overflow-x:auto; padding:4px 4px 10px;
+    scroll-snap-type:x proximity;
+  }
+  .flower-row::-webkit-scrollbar{height:5px;}
+  .flower-row::-webkit-scrollbar-thumb{background:var(--line); border-radius:10px;}
+
+  .flower-card{
+    flex:0 0 auto; width:92px; scroll-snap-align:start;
+    border:1px solid var(--line); border-radius:16px; background:#fff;
+    padding:10px 8px 9px; text-align:center; cursor:pointer;
+    transition:box-shadow .15s ease, border-color .15s ease, transform .1s ease;
+  }
+  .flower-card:active{transform:scale(0.97);}
+  .flower-card.active{border-color:var(--rose-deep); box-shadow:0 0 0 2px rgba(123,45,59,0.12);}
+  .flower-card canvas{width:52px;height:52px;}
+  .flower-card .name{font-size:11px; margin-top:4px; line-height:1.3;}
+  .flower-card .price{font-size:10.5px; color:var(--gold); margin-top:2px;}
+
+  .add-panel{
+    display:none;
+    border:1px solid var(--line); border-radius:16px; background:#fffdf9;
+    padding:14px; margin-top:2px;
+  }
+  .add-panel.open{display:block;}
+  .add-panel .row{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .swatches{display:flex; gap:8px; flex-wrap:wrap;}
+  .swatch{
+    width:26px;height:26px;border-radius:50%;
+    border:2px solid #fff; box-shadow:0 0 0 1px var(--line);
+    cursor:pointer;
+  }
+  .swatch.active{box-shadow:0 0 0 2px var(--rose-deep);}
+  .add-panel .price-line{font-size:12.5px; color:#8a7a80; margin-left:auto;}
+  .add-panel .price-line b{color:var(--rose-deep); font-size:14px;}
+  .add-btn{
+    margin-top:12px; width:100%; padding:11px; border:none; border-radius:12px;
+    background:var(--rose-deep); color:#fff; font-family:'Zen Kaku Gothic New';
+    font-size:13.5px; letter-spacing:0.08em; cursor:pointer;
+  }
+  .add-btn:active{opacity:0.85;}
+
+  .total-bar{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-top:18px; padding:14px 18px; border-radius:16px;
+    background:var(--plum); color:#fff;
+  }
+  .total-bar .l{font-size:12px; letter-spacing:0.12em; color:#cbb9c0;}
+  .total-bar .v{font-family:'Shippori Mincho',serif; font-size:24px; margin-top:2px;}
+  .total-bar .count{font-size:11.5px; color:#cbb9c0;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="brand">
+    <div class="mark">O'lkapulia<em>.</em></div>
+    <div class="tag">枯れない花束 — BOUQUET SIMULATOR</div>
+    <div class="rule"></div>
+  </header>
+
+  <div class="stage-wrap">
+    <canvas id="stage"></canvas>
+    <div class="price-tag">
+      <div class="label">TOTAL</div>
+      <div class="value" id="tagPrice">¥0</div>
+    </div>
+    <div class="empty-msg" id="emptyMsg">下のリストからお花を選んで<br>ブーケを作りましょう</div>
+    <div class="hint">1本指でドラッグ移動 ・ 2本指でひねって回転（PCはハンドルをドラッグ）</div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn" id="clearBtn">リセット</button>
+    <button class="btn primary" id="saveBtn">画像を保存</button>
+  </div>
+
+  <div class="panel">
+    <h2>— お花を選ぶ —</h2>
+    <div class="flower-row" id="flowerRow"></div>
+
+    <div class="add-panel" id="addPanel">
+      <div class="row">
+        <div class="swatches" id="swatchRow"></div>
+        <div class="price-line">単価 <b id="unitPrice">¥0</b></div>
+      </div>
+      <button class="add-btn" id="addBtn">ブーケに追加する</button>
+    </div>
+  </div>
+
+  <div class="total-bar">
+    <div>
+      <div class="l">お見積り合計</div>
+      <div class="count" id="countLine">0点のお花</div>
+    </div>
+    <div class="v" id="totalPrice">¥0</div>
+  </div>
+
+</div>
+
+<script>
+/* ===================================================================
+   O'lkapulia ブーケシミュレーター
+   花は写真を使わず、すべて canvas 上でベクター描画しています。
+   実店舗で使う際は drawXxx() の中身を実際の花写真( drawImage )に
+   差し替えるだけで、同じ操作性のまま本物の写真版に置き換えられます。
+=================================================================== */
+
+const FLOWER_TYPES = [
+  { id:'rose', name:'プリザーブド\nローズ', price:850, radius:34,
+    colors:[{n:'ワインレッド',h:'#7B2D3B'},{n:'ダスティピンク',h:'#C98A96'},{n:'アイボリー',h:'#F0E6D6'},{n:'テラコッタ',h:'#C1704A'}] },
+  { id:'peony', name:'ピオニー', price:1200, radius:38,
+    colors:[{n:'ブラッシュ',h:'#E8B4BC'},{n:'コーラル',h:'#E8927C'},{n:'アイボリー',h:'#F0E6D6'}] },
+  { id:'ranunculus', name:'ラナン\nキュラス', price:700, radius:30,
+    colors:[{n:'マスタード',h:'#D9A441'},{n:'アプリコット',h:'#E39B5D'},{n:'ホワイト',h:'#F5F0E4'},{n:'ボルドー',h:'#6E2A38'}] },
+  { id:'hydrangea', name:'ハイド\nランジア', price:650, radius:33,
+    colors:[{n:'ダスティブルー',h:'#8FA3B0'},{n:'ラベンダー',h:'#A99BC1'},{n:'アンティークグリーン',h:'#93A378'}] },
+  { id:'babysbreath', name:'かすみ草', price:300, radius:24,
+    colors:[{n:'ホワイト',h:'#FBF8F0'},{n:'ピンク',h:'#EBC7CE'}] },
+  { id:'eucalyptus', name:'ユーカリ\n(グリーン)', price:350, radius:28,
+    colors:[{n:'セージ',h:'#8A9B6E'},{n:'シルバーグリーン',h:'#A9B79A'}] },
+];
+
+// ---------- 色を明暗させるユーティリティ ----------
+function shade(hex, percent){
+  const num = parseInt(hex.slice(1),16);
+  let r=(num>>16)+Math.round(2.55*percent);
+  let g=((num>>8)&0xff)+Math.round(2.55*percent);
+  let b=(num&0xff)+Math.round(2.55*percent);
+  r=Math.min(255,Math.max(0,r)); g=Math.min(255,Math.max(0,g)); b=Math.min(255,Math.max(0,b));
+  return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+}
+
+// ---------- 花びらの基本形 ----------
+function petal(ctx,len,width){
+  ctx.beginPath();
+  ctx.moveTo(0,2);
+  ctx.bezierCurveTo(width,-len*0.35, width*0.6,-len*0.9, 0,-len);
+  ctx.bezierCurveTo(-width*0.6,-len*0.9, -width,-len*0.35, 0,2);
+  ctx.closePath();
+  ctx.fill();
+}
+function ring(ctx,count,len,width,color,offset=0){
+  ctx.fillStyle=color;
+  for(let i=0;i<count;i++){
+    ctx.save();
+    ctx.rotate(offset+i*(Math.PI*2/count));
+    petal(ctx,len,width);
+    ctx.restore();
+  }
+}
+
+// ---------- 各花の描画関数（中心=原点を基準） ----------
+function drawRose(ctx,c){
+  ring(ctx,6,26,11,shade(c,-16),0);
+  ring(ctx,6,19,9,c,Math.PI/6);
+  ring(ctx,5,12,7,shade(c,16),Math.PI/10);
+  ctx.beginPath(); ctx.fillStyle=shade(c,-32); ctx.arc(0,0,4,0,Math.PI*2); ctx.fill();
+}
+function drawPeony(ctx,c){
+  ring(ctx,8,30,10,shade(c,-8),0);
+  ring(ctx,8,23,9,c,Math.PI/8);
+  ring(ctx,7,16,8,shade(c,10),Math.PI/14);
+  ring(ctx,6,9,6,shade(c,20),Math.PI/12);
+}
+function drawRanunculus(ctx,c){
+  for(let i=0;i<5;i++){
+    ring(ctx,8,22-i*3.2,8-i*0.9,shade(c,-10+i*8), i*0.3);
+  }
+  ctx.beginPath(); ctx.fillStyle=shade(c,-28); ctx.arc(0,0,3,0,Math.PI*2); ctx.fill();
+}
+function drawHydrangea(ctx,c){
+  for(let i=0;i<11;i++){
+    const a=i*2.39996, r=5.5*Math.sqrt(i);
+    ctx.save();
+    ctx.translate(r*Math.cos(a), r*Math.sin(a));
+    ctx.rotate(a);
+    ring(ctx,4,7,3.2, i%3===0?shade(c,10):c, 0);
+    ctx.beginPath(); ctx.fillStyle=shade(c,-30); ctx.arc(0,0,1.3,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+}
+function drawBabysBreath(ctx,c){
+  for(let i=0;i<16;i++){
+    const a=i*2.39996, r=4.5*Math.sqrt(i);
+    ctx.save();
+    ctx.translate(r*Math.cos(a), r*Math.sin(a));
+    ring(ctx,5,3,1.6,c,a);
+    ctx.beginPath(); ctx.fillStyle=shade(c,-18); ctx.arc(0,0,0.8,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+}
+function drawEucalyptus(ctx,c){
+  ctx.strokeStyle=shade(c,-24); ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(0,26); ctx.lineTo(0,-26); ctx.stroke();
+  for(let i=-24;i<=24;i+=8){
+    const side=((i/8)%2===0)?1:-1;
+    ctx.save();
+    ctx.translate(0,i);
+    ctx.rotate(side*0.85);
+    ctx.beginPath();
+    ctx.ellipse(side*7,0,7,4,0,0,Math.PI*2);
+    ctx.fillStyle = (i%16===0)?shade(c,12):c;
+    ctx.fill();
+    ctx.restore();
+  }
+}
+const DRAW = {
+  rose:drawRose, peony:drawPeony, ranunculus:drawRanunculus,
+  hydrangea:drawHydrangea, babysbreath:drawBabysBreath, eucalyptus:drawEucalyptus
+};
+
+// ---------- キャンバスのセットアップ ----------
+const canvas = document.getElementById('stage');
+const ctx = canvas.getContext('2d');
+let W=0, H=0;
+
+function resize(){
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width*dpr;
+  canvas.height = rect.height*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  W = rect.width; H = rect.height;
+  render();
+}
+window.addEventListener('resize', resize);
+
+// ---------- ブーケの状態 ----------
+let objects = [];   // {id,type,x,y,rotation,color,price,radius}
+let nextId = 1;
+let selectedId = null;
+
+function typeOf(id){ return FLOWER_TYPES.find(t=>t.id===id); }
+
+function addFlower(typeId, colorHex, price){
+  const t = typeOf(typeId);
+  const n = objects.length;
+  const obj = {
+    id: nextId++,
+    type: typeId,
+    x: W/2 + ((n%5)-2)*16,
+    y: H/2 + Math.floor(n/5)*16 - 20,
+    rotation: (Math.random()*0.6-0.3),
+    color: colorHex,
+    price: price,
+    radius: t.radius
+  };
+  objects.push(obj);
+  selectedId = obj.id;
+  updateTotals();
+  render();
+}
+
+function removeFlower(id){
+  objects = objects.filter(o=>o.id!==id);
+  if(selectedId===id) selectedId=null;
+  updateTotals();
+  render();
+}
+
+function updateTotals(){
+  const total = objects.reduce((s,o)=>s+o.price,0);
+  const fmt = v => '¥'+v.toLocaleString('ja-JP');
+  document.getElementById('tagPrice').textContent = fmt(total);
+  document.getElementById('totalPrice').textContent = fmt(total);
+  document.getElementById('countLine').textContent = objects.length+'点のお花';
+  document.getElementById('emptyMsg').style.display = objects.length? 'none':'block';
+}
+
+// ---------- 選択中の花のハンドル位置 ----------
+function handlePos(o){
+  const dist = o.radius+24;
+  const a = o.rotation - Math.PI/2;
+  return { x:o.x+Math.cos(a)*dist, y:o.y+Math.sin(a)*dist };
+}
+function deletePos(o){
+  return { x:o.x+o.radius*0.72, y:o.y-o.radius*0.72 };
+}
+
+// ---------- 描画 ----------
+function render(){
+  ctx.clearRect(0,0,W,H);
+
+  // 台座のガイド（うっすらとした円）
+  ctx.save();
+  ctx.strokeStyle='rgba(180,150,130,0.18)';
+  ctx.setLineDash([4,5]);
+  ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.arc(W/2,H/2-10,Math.min(W,H)*0.34,0,Math.PI*2);
+  ctx.stroke();
+  ctx.restore();
+
+  objects.forEach(o=>{
+    ctx.save();
+    ctx.translate(o.x,o.y);
+    ctx.rotate(o.rotation);
+    DRAW[o.type](ctx,o.color);
+    ctx.restore();
+  });
+
+  const sel = objects.find(o=>o.id===selectedId);
+  if(sel){
+    ctx.save();
+    ctx.strokeStyle='rgba(123,45,59,0.55)';
+    ctx.setLineDash([3,4]);
+    ctx.lineWidth=1.3;
+    ctx.beginPath();
+    ctx.arc(sel.x,sel.y,sel.radius+10,0,Math.PI*2);
+    ctx.stroke();
+    ctx.restore();
+
+    // 回転ハンドル
+    const hp = handlePos(sel);
+    ctx.save();
+    ctx.strokeStyle='rgba(123,45,59,0.4)';
+    ctx.setLineDash([2,3]);
+    ctx.beginPath(); ctx.moveTo(sel.x,sel.y); ctx.lineTo(hp.x,hp.y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(hp.x,hp.y,8,0,Math.PI*2);
+    ctx.fillStyle='#fff'; ctx.fill();
+    ctx.strokeStyle='#7B2D3B'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.restore();
+
+    // 削除ボタン
+    const dp = deletePos(sel);
+    ctx.save();
+    ctx.beginPath(); ctx.arc(dp.x,dp.y,9,0,Math.PI*2);
+    ctx.fillStyle='#3C2A35'; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.5;
+    ctx.beginPath();
+    ctx.moveTo(dp.x-3.5,dp.y-3.5); ctx.lineTo(dp.x+3.5,dp.y+3.5);
+    ctx.moveTo(dp.x+3.5,dp.y-3.5); ctx.lineTo(dp.x-3.5,dp.y+3.5);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ---------- ヒットテスト ----------
+function dist(x1,y1,x2,y2){ return Math.hypot(x1-x2,y1-y2); }
+
+function hitTest(px,py){
+  const sel = objects.find(o=>o.id===selectedId);
+  if(sel){
+    const dp = deletePos(sel);
+    if(dist(px,py,dp.x,dp.y) < 12) return {kind:'delete', obj:sel};
+    const hp = handlePos(sel);
+    if(dist(px,py,hp.x,hp.y) < 14) return {kind:'rotate', obj:sel};
+  }
+  for(let i=objects.length-1;i>=0;i--){
+    const o=objects[i];
+    if(dist(px,py,o.x,o.y) < o.radius) return {kind:'move', obj:o};
+  }
+  return null;
+}
+
+function pointerPos(e){
+  const rect = canvas.getBoundingClientRect();
+  return { x:e.clientX-rect.left, y:e.clientY-rect.top };
+}
+
+// ---------- ポインター操作（マウス／指1本） ----------
+const active = new Map(); // pointerId -> {x,y}
+let mode = null;   // 'move' | 'rotate'
+let dragOffset = {x:0,y:0};
+let pinchStartAngle = 0, pinchStartRotation = 0;
+
+canvas.addEventListener('pointerdown', e=>{
+  canvas.setPointerCapture(e.pointerId);
+  const p = pointerPos(e);
+  active.set(e.pointerId, p);
+
+  if(active.size >= 2){
+    // 2本目の指が触れた → 選択中の花をピンチ回転モードへ
+    const pts = Array.from(active.values());
+    pinchStartAngle = Math.atan2(pts[1].y-pts[0].y, pts[1].x-pts[0].x);
+    const sel = objects.find(o=>o.id===selectedId);
+    if(sel){ pinchStartRotation = sel.rotation; mode='pinch'; }
+    return;
+  }
+
+  const hit = hitTest(p.x,p.y);
+  if(hit && hit.kind==='delete'){
+    removeFlower(hit.obj.id);
+    mode=null;
+    return;
+  }
+  if(hit && hit.kind==='rotate'){
+    mode='rotate';
+    return;
+  }
+  if(hit && hit.kind==='move'){
+    selectedId = hit.obj.id;
+    objects = objects.filter(o=>o!==hit.obj); objects.push(hit.obj); // 最前面へ
+    dragOffset = { x:p.x-hit.obj.x, y:p.y-hit.obj.y };
+    mode='move';
+  } else {
+    selectedId = null;
+    mode=null;
+  }
+  render();
+});
+
+canvas.addEventListener('pointermove', e=>{
+  if(!active.has(e.pointerId)) return;
+  const p = pointerPos(e);
+  active.set(e.pointerId, p);
+
+  if(mode==='pinch' && active.size>=2){
+    const pts = Array.from(active.values());
+    const angle = Math.atan2(pts[1].y-pts[0].y, pts[1].x-pts[0].x);
+    const sel = objects.find(o=>o.id===selectedId);
+    if(sel){ sel.rotation = pinchStartRotation + (angle-pinchStartAngle); render(); }
+    return;
+  }
+  const sel = objects.find(o=>o.id===selectedId);
+  if(mode==='move' && sel){
+    sel.x = p.x-dragOffset.x; sel.y = p.y-dragOffset.y;
+    render();
+  } else if(mode==='rotate' && sel){
+    sel.rotation = Math.atan2(p.y-sel.y, p.x-sel.x) + Math.PI/2;
+    render();
+  }
+});
+
+function endPointer(e){
+  active.delete(e.pointerId);
+  if(active.size<2) mode = active.size===1 ? mode : null;
+}
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+canvas.addEventListener('pointerleave', endPointer);
+
+// ---------- 下部：花リスト ----------
+const flowerRow = document.getElementById('flowerRow');
+const addPanel = document.getElementById('addPanel');
+const swatchRow = document.getElementById('swatchRow');
+const unitPriceEl = document.getElementById('unitPrice');
+const addBtn = document.getElementById('addBtn');
+
+let currentType = null;
+let currentColor = null;
+
+FLOWER_TYPES.forEach(t=>{
+  const card = document.createElement('div');
+  card.className='flower-card';
+  card.dataset.id = t.id;
+  card.innerHTML = `
+    <canvas width="104" height="104"></canvas>
+    <div class="name">${t.name.replace('\n','<br>')}</div>
+    <div class="price">¥${t.price.toLocaleString('ja-JP')}〜</div>
+  `;
+  flowerRow.appendChild(card);
+
+  // サムネイル描画
+  const tctx = card.querySelector('canvas').getContext('2d');
+  tctx.save();
+  tctx.translate(52,52);
+  tctx.scale(1.0,1.0);
+  DRAW[t.id](tctx, t.colors[0].h);
+  tctx.restore();
+
+  card.addEventListener('click', ()=>openAddPanel(t));
+});
+
+function openAddPanel(t){
+  currentType = t;
+  currentColor = t.colors[0].h;
+
+  document.querySelectorAll('.flower-card').forEach(c=>{
+    c.classList.toggle('active', c.dataset.id===t.id);
+  });
+
+  swatchRow.innerHTML='';
+  t.colors.forEach((c,i)=>{
+    const sw = document.createElement('div');
+    sw.className='swatch'+(i===0?' active':'');
+    sw.style.background=c.h;
+    sw.title=c.n;
+    sw.addEventListener('click', ()=>{
+      currentColor=c.h;
+      swatchRow.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active'));
+      sw.classList.add('active');
+    });
+    swatchRow.appendChild(sw);
+  });
+
+  unitPriceEl.textContent = '¥'+t.price.toLocaleString('ja-JP');
+  addPanel.classList.add('open');
+  addPanel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+addBtn.addEventListener('click', ()=>{
+  if(!currentType) return;
+  addFlower(currentType.id, currentColor, currentType.price);
+});
+
+// ---------- ツールバー ----------
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  objects=[]; selectedId=null; updateTotals(); render();
+});
+document.getElementById('saveBtn').addEventListener('click', ()=>{
+  const wasSelected = selectedId;
+  selectedId = null; render(); // 選択枠を消してから書き出す
+  const url = canvas.toDataURL('image/png');
+  selectedId = wasSelected; render();
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'olkapulia-bouquet.png';
+  a.click();
+});
+
+// ---------- 初期化 ----------
+resize();
+updateTotals();
+</script>
+</body>
+</html>

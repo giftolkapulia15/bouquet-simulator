@@ -695,7 +695,7 @@ document.getElementById('importFile').addEventListener('change', ()=>{
 document.getElementById('exportHtmlBtn').addEventListener('click', ()=>{
   if(flowers.length===0){ toast('お花を1つ以上追加してください'); return; }
   let tpl = document.getElementById('simTemplate').textContent;
-  tpl = tpl.split('<\\/script>').join('</script>');
+  tpl = tpl.split(String.fromCharCode(60,92,47,115,99,114,105,112,116,62)).join('</script>');
   tpl = tpl.replace("/*__CONTACT_URL__*/''", JSON.stringify(contactUrlInput.value.trim()));
   tpl = tpl.replace('/*__DATA__*/[]', JSON.stringify(flowers));
   const blob = new Blob([tpl], {type:'text/html'});

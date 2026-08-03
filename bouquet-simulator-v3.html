@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ブーケシミュレーター | O'lkapulia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Shippori+Mincho:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ivory:#F6F0E6; --ivory-deep:#EFE3D0; --plum:#33222B; --plum-soft:#4A3540;
+    --rose-deep:#7B2D3B; --gold:#AD8A55; --gold-soft:rgba(173,138,85,0.35);
+    --line:rgba(51,34,43,0.13); --shadow: 0 12px 34px rgba(51,34,43,0.14);
+    --ok:#5B7A55; --warn:#B0523C;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:radial-gradient(1200px 520px at 50% -12%, #fffaf1 0%, var(--ivory) 55%),var(--ivory);color:var(--plum);font-family:'Zen Kaku Gothic New', sans-serif;-webkit-tap-highlight-color: transparent;}
+  .app{max-width:960px;margin:0 auto;padding:22px 16px 60px;}
+  header.brand{text-align:center;padding:8px 0 18px;}
+  header.brand .mark{font-family:'Shippori Mincho', serif;font-size:31px;letter-spacing:0.06em;color:var(--plum);}
+  header.brand .mark em{font-style:normal;color:var(--rose-deep);}
+  header.brand .tag{margin-top:7px;font-size:12px;letter-spacing:0.1em;color:#8a7a80;line-height:1.6;}
+  header.brand .rule{width:70px;height:1px;background:var(--gold);margin:15px auto 0;opacity:0.75;}
+
+  .step-card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px 16px;margin-bottom:12px;}
+  .step-card .step-title{font-size:12px;color:var(--gold);letter-spacing:0.08em;margin-bottom:9px;font-weight:700;}
+  .chip-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;}
+  .chip-row::-webkit-scrollbar{display:none;}
+  .chip{flex:0 0 auto;padding:8px 15px;border-radius:999px;font-size:12.5px;border:1px solid var(--line);background:#fdfaf5;color:var(--plum-soft);cursor:pointer;white-space:nowrap;}
+  .chip.active{background:var(--plum);color:#fff;border-color:var(--plum);}
+
+  .stage-wrap{position:relative; border-radius:24px;background:radial-gradient(circle at 50% 34%, rgba(255,255,255,0.95), rgba(255,255,255,0) 62%),linear-gradient(180deg, #fffdf9, #f2e8d7);box-shadow: var(--shadow), inset 0 0 0 1px var(--line);overflow:hidden;margin-top:16px;}
+  #stage{display:block;width:100%;height:50vh;min-height:320px;max-height:480px;touch-action:none;}
+  .hint{position:absolute; left:14px; bottom:12px; font-size:11px; color:#9a8c92;background:rgba(255,255,255,0.6); backdrop-filter: blur(3px);padding:6px 10px; border-radius:20px; line-height:1.5; pointer-events:none;}
+  .price-tag{position:absolute; top:14px; right:14px; display:flex; flex-direction:column; align-items:flex-end;background:#fffaf3; border:1px dashed var(--gold-soft); border-radius:2px 14px 14px 14px;box-shadow: var(--shadow); padding:10px 16px; max-width:56%;}
+  .price-tag .label{font-size:10px;letter-spacing:0.14em;color:#9a8c92;}
+  .price-tag .value{font-family:'Shippori Mincho',serif;font-size:21px;color:var(--rose-deep);margin-top:1px;}
+  .price-tag .approx{font-size:9px;color:#b3a49a;margin-top:2px;}
+  .price-tag .budget-note{font-size:10.5px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--gold-soft);text-align:right;}
+  .price-tag .budget-note.ok{color:var(--ok);}
+  .price-tag .budget-note.warn{color:var(--warn);}
+  .empty-msg{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; color:#b3a49a; font-size:13px; letter-spacing:0.03em; line-height:1.8; pointer-events:none; width:80%;}
+
+  .tip-bubble{position:absolute; left:14px; top:14px; max-width:62%; background:var(--plum); color:#fff; font-size:11px; line-height:1.6; padding:10px 12px; border-radius:12px 12px 12px 2px; box-shadow:var(--shadow);}
+  .tip-bubble .x{position:absolute; top:4px; right:7px; cursor:pointer; opacity:0.7; font-size:12px;}
+
+  .toolbar{display:flex; gap:8px; justify-content:flex-end; margin:12px 2px 4px;}
+  .btn{font-family:'Zen Kaku Gothic New';font-size:12.5px;letter-spacing:0.04em;border:1px solid var(--line);background:#fff;color:var(--plum);padding:8px 14px;border-radius:999px;cursor:pointer;}
+  .btn.primary{background:var(--plum);color:#fff;border-color:var(--plum);}
+
+  /* 明細 */
+  .breakdown{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin-top:14px;display:none;}
+  .breakdown.show{display:block;}
+  .breakdown h3{font-family:'Shippori Mincho',serif;font-size:14px;margin:0 0 10px;}
+  .breakdown-row{display:flex;align-items:center;font-size:12.5px;padding:7px 0;border-bottom:1px solid var(--line);}
+  .breakdown-row:last-child{border-bottom:none;}
+  .breakdown-row .n{flex:1;}
+  .breakdown-row .q{color:#9a8c92;margin:0 10px;}
+  .breakdown-row .s{color:var(--gold);width:70px;text-align:right;}
+  .breakdown-row .rm{width:24px;height:24px;border-radius:50%;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-left:10px;font-size:12px;}
+
+  /* 花言葉メッセージ */
+  .meaning-card{display:none;margin-top:14px;padding:18px;border-radius:16px;background:linear-gradient(135deg,#fffaf3,#f6ecd9);border:1px solid var(--gold-soft);text-align:center;}
+  .meaning-card.show{display:block;}
+  .meaning-card .l{font-size:10px;letter-spacing:0.2em;color:var(--gold);}
+  .meaning-card .t{font-family:'Shippori Mincho',serif;font-size:16px;color:var(--plum);margin-top:8px;line-height:1.7;}
+
+  /* CTA */
+  .cta-row{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
+  .cta-btn{padding:15px;border:none;border-radius:14px;font-size:14px;font-family:inherit;letter-spacing:0.03em;cursor:pointer;}
+  .cta-btn.main{background:var(--rose-deep);color:#fff;}
+  .cta-btn.sub{background:#fff;border:1px solid var(--line);color:var(--plum);}
+
+  .cat-row{display:flex;gap:8px;overflow-x:auto;padding:20px 2px 6px;}
+  .cat-row::-webkit-scrollbar{display:none;}
+  .panel h2{font-family:'Shippori Mincho', serif;font-weight:600;font-size:15px;margin:6px 0 10px 4px;color:var(--plum);letter-spacing:0.04em;}
+  .flower-row{display:flex;gap:12px;overflow-x:auto;padding:4px 4px 12px;scroll-snap-type:x proximity;}
+  .flower-row::-webkit-scrollbar{height:5px;}
+  .flower-row::-webkit-scrollbar-thumb{background:var(--line);border-radius:10px;}
+  .flower-card{position:relative;flex:0 0 auto; width:104px; scroll-snap-align:start; border:1px solid var(--line); border-radius:16px;background:#fff; padding:10px 8px 9px; text-align:center; cursor:pointer;}
+  .flower-card.active{border-color:var(--rose-deep); box-shadow:0 0 0 2px rgba(123,45,59,0.12);}
+  .flower-card .badge{position:absolute;top:-7px;left:8px;background:var(--rose-deep);color:#fff;font-size:9px;padding:2px 7px;border-radius:999px;}
+  .thumb{width:100%; aspect-ratio:1/1; border-radius:12px; overflow:hidden;background:radial-gradient(circle at 50% 42%, #fdf7ec, #f1e6d3 78%);display:flex; align-items:center; justify-content:center;}
+  .thumb img{width:82%;height:82%;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(51,34,43,0.16));}
+  .flower-card .name{font-size:11px;margin-top:6px;line-height:1.3;}
+  .flower-card .price{font-size:10.5px;color:var(--gold);margin-top:2px;}
+
+  .add-panel{display:none;border:1px solid var(--line);border-radius:18px;background:#fffdf9;padding:16px;margin-top:2px;}
+  .add-panel.open{display:flex;gap:16px;flex-wrap:wrap;}
+  .add-panel .preview{width:96px;height:96px;border-radius:14px;flex:0 0 auto;background:radial-gradient(circle at 50% 42%, #fdf7ec, #f1e6d3 78%);display:flex;align-items:center;justify-content:center;}
+  .add-panel .preview img{width:82%;height:82%;object-fit:contain;}
+  .add-panel .info{flex:1 1 180px;min-width:180px;}
+  .add-panel .info .name{font-family:'Shippori Mincho',serif;font-size:16px;color:var(--plum);}
+  .add-panel .info .price{font-size:13px;color:var(--gold);margin-top:2px;}
+  .meaning-block{margin-top:10px;padding-top:10px;border-top:1px dashed var(--gold-soft);}
+  .meaning-block .label{font-size:10px;letter-spacing:0.18em;color:var(--gold);}
+  .meaning-block .kw{display:inline-block;background:var(--gold-soft);color:var(--plum);font-size:11px;padding:2px 9px;border-radius:999px;margin-top:4px;}
+  .meaning-block .text{font-family:'Cormorant Garamond','Shippori Mincho',serif;font-style:italic;font-size:14.5px;color:var(--plum-soft);margin-top:6px;line-height:1.5;}
+  .add-btn{margin-top:12px;width:100%;padding:11px;border:none;border-radius:12px;background:var(--rose-deep);color:#fff;font-size:13.5px;letter-spacing:0.08em;cursor:pointer;}
+
+  .total-bar{display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding:14px 18px;border-radius:16px;background:var(--plum);color:#fff;}
+  .total-bar .l{font-size:12px;letter-spacing:0.12em;color:#cbb9c0;}
+  .total-bar .v{font-family:'Shippori Mincho',serif;font-size:24px;margin-top:2px;}
+  .total-bar .count{font-size:11.5px;color:#cbb9c0;}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--plum);color:#fff;padding:11px 18px;border-radius:999px;font-size:12.5px;opacity:0;transition:opacity .25s ease;pointer-events:none;z-index:99;}
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="brand">
+    <div class="mark">O'lkapulia<em>.</em></div>
+    <div class="tag">贈りたい想いと予算に合わせて、<br>世界にひとつのブーケをシミュレーションできます。</div>
+    <div class="rule"></div>
+  </header>
+
+  <div class="step-card">
+    <div class="step-title">① 贈る用途を選ぶ（任意）</div>
+    <div class="chip-row" id="occRow"></div>
+  </div>
+  <div class="step-card">
+    <div class="step-title">② ご予算を選ぶ（任意）</div>
+    <div class="chip-row" id="budgetRow"></div>
+  </div>
+
+  <div class="stage-wrap">
+    <canvas id="stage"></canvas>
+    <div class="price-tag">
+      <div class="label">TOTAL</div>
+      <div class="value" id="tagPrice">¥0</div>
+      <div class="approx">※表示価格は概算です</div>
+      <div class="budget-note" id="budgetNote" style="display:none;"></div>
+    </div>
+    <div class="empty-msg" id="emptyMsg">下のリストからお花を選んで<br>ブーケを作りましょう</div>
+    <div class="tip-bubble" id="tipBubble">💡 花は1本指でドラッグして動かせます<br>2本指でひねると回転できます<span class="x" id="tipClose">✕</span></div>
+    <div class="hint">1本指でドラッグ移動 ・ 2本指でひねって回転（PCはハンドルをドラッグ）</div>
+  </div>
+
+  <div class="toolbar">
+    <button class="btn" id="clearBtn">リセット</button>
+    <button class="btn primary" id="saveBtn">画像を保存</button>
+  </div>
+
+  <div class="breakdown" id="breakdown">
+    <h3>選んだお花の明細</h3>
+    <div id="breakdownList"></div>
+  </div>
+
+  <div class="meaning-card" id="meaningCard">
+    <div class="l">MESSAGE</div>
+    <div class="t" id="meaningText"></div>
+  </div>
+
+  <div class="cta-row">
+    <button class="cta-btn main" id="consultBtn">💬 このブーケで相談する</button>
+    <button class="cta-btn sub" id="shareBtn">📋 内容をコピー／LINEで送る</button>
+  </div>
+
+  <div class="cat-row" id="catRow"></div>
+
+  <div class="panel">
+    <h2>— お花を選ぶ —</h2>
+    <div class="flower-row" id="flowerRow"></div>
+
+    <div class="add-panel" id="addPanel">
+      <div class="preview" id="previewBox"></div>
+      <div class="info">
+        <div class="name" id="infoName"></div>
+        <div class="price" id="infoPrice"></div>
+        <div class="meaning-block">
+          <div class="label">HANAKOTOBA</div>
+          <div class="kw" id="infoKeyword"></div>
+          <div class="text" id="infoMeaning"></div>
+        </div>
+        <button class="add-btn" id="addBtn">ブーケに追加する</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="total-bar">
+    <div><div class="l">お見積り合計</div><div class="count" id="countLine">0点のお花</div></div>
+    <div class="v" id="totalPrice">¥0</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= 設定（お店ごとに書き換える部分） ================= */
+const CONTACT_URL = ''; // ← LINE公式アカウントURL や 問い合わせフォームURL を入れてください（空だと相談ボタンで案内のみ表示）
+
+const OCCASIONS = ['誕生日','記念日','プロポーズ','結婚祝い','両親贈呈品'];
+const BUDGETS = [
+  {label:'¥10,000以内', value:10000},
+  {label:'¥15,000前後', value:15000},
+  {label:'¥20,000前後', value:20000},
+  {label:'¥30,000前後', value:30000},
+];
+
+const FLOWERS = [
+  { id:'rose-wine',   category:'バラ',        name:'バラ（ワインレッド）',   price:850,  keyword:'情熱的な愛', meaning:'あなたを愛しています（花言葉サンプル）', img:'images/rose-wine.png',   size:120, occasions:['記念日','プロポーズ'] },
+  { id:'rose-pink',   category:'バラ',        name:'バラ（ダスティピンク）', price:850,  keyword:'上品', meaning:'上品・しとやか（花言葉サンプル）', img:'images/rose-pink.png',   size:120, occasions:['誕生日','両親贈呈品'] },
+  { id:'peony-blush', category:'ピオニー',     name:'ピオニー（ブラッシュ）', price:1200, keyword:'幸福な結婚', meaning:'幸福な結婚（花言葉サンプル）', img:'images/peony-blush.png', size:140, occasions:['結婚祝い'] },
+  { id:'ranun-mustard',category:'ラナンキュラス', name:'ラナンキュラス（マスタード）', price:700, keyword:'魅力', meaning:'晴れやかな魅力（花言葉サンプル）', img:'images/ranun-mustard.png', size:100, occasions:['誕生日'] },
+  { id:'hydrangea-blue',category:'アジサイ',   name:'アジサイ（ダスティブルー）', price:650, keyword:'感謝', meaning:'辛抱強い愛情（花言葉サンプル）', img:'images/hydrangea-blue.png', size:130, occasions:['両親贈呈品','記念日'] },
+  { id:'babysbreath', category:'かすみ草',     name:'かすみ草',              price:300,  keyword:'清らかな心', meaning:'清らかな心（花言葉サンプル）', img:'images/babysbreath.png', size:90, occasions:[] },
+  { id:'eucalyptus',  category:'ユーカリ',     name:'ユーカリ（グリーン）',   price:350,  keyword:'新生', meaning:'再生・新生（花言葉サンプル）', img:'images/eucalyptus.png',  size:110, occasions:[] },
+];
+/* ==================================================================== */
+
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2400); }
+
+const imgCache = {};
+function loadImg(src){ if(imgCache[src]) return imgCache[src]; const im=new Image(); im.src=src; im.loaded=false; im.onload=()=>{im.loaded=true; render();}; im.onerror=()=>{im.failed=true;}; imgCache[src]=im; return im; }
+FLOWERS.forEach(f=> loadImg(f.img));
+
+const canvas=document.getElementById('stage'); const ctx=canvas.getContext('2d'); let W=0,H=0;
+function resize(){ const rect=canvas.getBoundingClientRect(); const dpr=window.devicePixelRatio||1; canvas.width=rect.width*dpr; canvas.height=rect.height*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); W=rect.width; H=rect.height; render(); }
+window.addEventListener('resize', resize);
+
+let objects=[]; let nextId=1; let selectedId=null;
+let selOccasion=null, selBudget=null;
+
+function flowerOf(id){ return FLOWERS.find(f=>f.id===id); }
+
+function addFlower(flowerId){
+  const f=flowerOf(flowerId); const n=objects.length;
+  const obj={id:nextId++, flowerId, x:W/2+((n%5)-2)*16, y:H/2+Math.floor(n/5)*16-20, rotation:(Math.random()*0.5-0.25), size:f.size};
+  objects.push(obj); selectedId=obj.id; updateTotals(); render();
+}
+function removeFlower(id){ objects=objects.filter(o=>o.id!==id); if(selectedId===id) selectedId=null; updateTotals(); render(); }
+function removeOneOf(flowerId){
+  for(let i=objects.length-1;i>=0;i--){ if(objects[i].flowerId===flowerId){ objects.splice(i,1); break; } }
+  updateTotals(); render();
+}
+
+function updateTotals(){
+  const total = objects.reduce((s,o)=>s+flowerOf(o.flowerId).price,0);
+  const fmt = v => '¥'+v.toLocaleString('ja-JP');
+  document.getElementById('tagPrice').textContent = fmt(total);
+  document.getElementById('totalPrice').textContent = fmt(total);
+  document.getElementById('countLine').textContent = objects.length+'点のお花';
+  document.getElementById('emptyMsg').style.display = objects.length? 'none':'block';
+
+  // 予算メモ
+  const bn = document.getElementById('budgetNote');
+  if(selBudget){
+    const remain = selBudget - total;
+    bn.style.display='block';
+    if(remain>=0){ bn.className='budget-note ok'; bn.textContent='あと'+fmt(remain)+'で予算内'; }
+    else { bn.className='budget-note warn'; bn.textContent='予算を'+fmt(-remain)+'オーバー'; }
+  } else { bn.style.display='none'; }
+
+  // 明細
+  const groups = {};
+  objects.forEach(o=>{ groups[o.flowerId] = (groups[o.flowerId]||0)+1; });
+  const ids = Object.keys(groups);
+  const bd = document.getElementById('breakdown');
+  const bl = document.getElementById('breakdownList');
+  if(ids.length===0){ bd.classList.remove('show'); }
+  else {
+    bd.classList.add('show'); bl.innerHTML='';
+    ids.forEach(id=>{
+      const f=flowerOf(id); const qty=groups[id]; const sub=f.price*qty;
+      const row=document.createElement('div'); row.className='breakdown-row';
+      row.innerHTML = '<div class="n">'+f.name+'</div><div class="q">× '+qty+'</div><div class="s">'+fmt(sub)+'</div><div class="rm" data-id="'+id+'">－</div>';
+      bl.appendChild(row);
+    });
+  }
+
+  // 花言葉メッセージ
+  const mc = document.getElementById('meaningCard');
+  if(ids.length===0){ mc.classList.remove('show'); }
+  else {
+    const kws=[...new Set(ids.map(id=>flowerOf(id).keyword).filter(Boolean))];
+    document.getElementById('meaningText').textContent = kws.join('・')+'を込めたブーケです。';
+    mc.classList.add('show');
+  }
+}
+
+document.getElementById('breakdownList').addEventListener('click', e=>{
+  const btn = e.target.closest('.rm'); if(!btn) return;
+  removeOneOf(btn.dataset.id);
+});
+
+function handlePos(o){ const dist=o.size/2+24; const a=o.rotation-Math.PI/2; return {x:o.x+Math.cos(a)*dist, y:o.y+Math.sin(a)*dist}; }
+function deletePos(o){ return {x:o.x+o.size*0.34, y:o.y-o.size*0.34}; }
+
+function render(){
+  ctx.clearRect(0,0,W,H);
+  ctx.save(); ctx.strokeStyle='rgba(180,150,130,0.18)'; ctx.setLineDash([4,5]); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(W/2,H/2-10,Math.min(W,H)*0.34,0,Math.PI*2); ctx.stroke(); ctx.restore();
+  objects.forEach(o=>{
+    const f=flowerOf(o.flowerId); const im=imgCache[f.img];
+    ctx.save(); ctx.translate(o.x,o.y); ctx.rotate(o.rotation);
+    if(im && im.loaded){ const ratio=im.naturalWidth/im.naturalHeight; let w=o.size,h=o.size/ratio; if(h>o.size){h=o.size; w=o.size*ratio;} ctx.drawImage(im,-w/2,-h/2,w,h); }
+    else { ctx.setLineDash([3,4]); ctx.strokeStyle='rgba(123,45,59,0.35)'; ctx.beginPath(); ctx.arc(0,0,o.size/2,0,Math.PI*2); ctx.stroke(); ctx.fillStyle='rgba(123,45,59,0.45)'; ctx.font='11px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('写真未設定',0,0); }
+    ctx.restore();
+  });
+  const sel=objects.find(o=>o.id===selectedId);
+  if(sel){
+    ctx.save(); ctx.strokeStyle='rgba(123,45,59,0.55)'; ctx.setLineDash([3,4]); ctx.lineWidth=1.3;
+    ctx.beginPath(); ctx.arc(sel.x,sel.y,sel.size/2+10,0,Math.PI*2); ctx.stroke(); ctx.restore();
+    const hp=handlePos(sel);
+    ctx.save(); ctx.strokeStyle='rgba(123,45,59,0.4)'; ctx.setLineDash([2,3]);
+    ctx.beginPath(); ctx.moveTo(sel.x,sel.y); ctx.lineTo(hp.x,hp.y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(hp.x,hp.y,8,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill(); ctx.strokeStyle='#7B2D3B'; ctx.lineWidth=1.5; ctx.stroke(); ctx.restore();
+    const dp=deletePos(sel);
+    ctx.save(); ctx.beginPath(); ctx.arc(dp.x,dp.y,9,0,Math.PI*2); ctx.fillStyle='#33222B'; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(dp.x-3.5,dp.y-3.5); ctx.lineTo(dp.x+3.5,dp.y+3.5); ctx.moveTo(dp.x+3.5,dp.y-3.5); ctx.lineTo(dp.x-3.5,dp.y+3.5); ctx.stroke(); ctx.restore();
+  }
+}
+
+function dist(x1,y1,x2,y2){ return Math.hypot(x1-x2,y1-y2); }
+function hitTest(px,py){
+  const sel=objects.find(o=>o.id===selectedId);
+  if(sel){ const dp=deletePos(sel); if(dist(px,py,dp.x,dp.y)<12) return {kind:'delete',obj:sel}; const hp=handlePos(sel); if(dist(px,py,hp.x,hp.y)<14) return {kind:'rotate',obj:sel}; }
+  for(let i=objects.length-1;i>=0;i--){ const o=objects[i]; if(dist(px,py,o.x,o.y)<o.size/2) return {kind:'move',obj:o}; }
+  return null;
+}
+function pointerPos(e){ const rect=canvas.getBoundingClientRect(); return {x:e.clientX-rect.left, y:e.clientY-rect.top}; }
+
+const active=new Map(); let mode=null; let dragOffset={x:0,y:0}; let pinchStartAngle=0, pinchStartRotation=0;
+canvas.addEventListener('pointerdown', e=>{
+  canvas.setPointerCapture(e.pointerId); const p=pointerPos(e); active.set(e.pointerId,p);
+  if(active.size>=2){ const pts=Array.from(active.values()); pinchStartAngle=Math.atan2(pts[1].y-pts[0].y, pts[1].x-pts[0].x); const sel=objects.find(o=>o.id===selectedId); if(sel){ pinchStartRotation=sel.rotation; mode='pinch'; } return; }
+  const hit=hitTest(p.x,p.y);
+  if(hit && hit.kind==='delete'){ removeFlower(hit.obj.id); mode=null; return; }
+  if(hit && hit.kind==='rotate'){ mode='rotate'; return; }
+  if(hit && hit.kind==='move'){ selectedId=hit.obj.id; objects=objects.filter(o=>o!==hit.obj); objects.push(hit.obj); dragOffset={x:p.x-hit.obj.x, y:p.y-hit.obj.y}; mode='move'; }
+  else { selectedId=null; mode=null; }
+  render();
+});
+canvas.addEventListener('pointermove', e=>{
+  if(!active.has(e.pointerId)) return; const p=pointerPos(e); active.set(e.pointerId,p);
+  if(mode==='pinch' && active.size>=2){ const pts=Array.from(active.values()); const angle=Math.atan2(pts[1].y-pts[0].y, pts[1].x-pts[0].x); const sel=objects.find(o=>o.id===selectedId); if(sel){ sel.rotation=pinchStartRotation+(angle-pinchStartAngle); render(); } return; }
+  const sel=objects.find(o=>o.id===selectedId);
+  if(mode==='move' && sel){ sel.x=p.x-dragOffset.x; sel.y=p.y-dragOffset.y; render(); }
+  else if(mode==='rotate' && sel){ sel.rotation=Math.atan2(p.y-sel.y, p.x-sel.x)+Math.PI/2; render(); }
+});
+function endPointer(e){ active.delete(e.pointerId); if(active.size<2) mode = active.size===1 ? mode : null; }
+canvas.addEventListener('pointerup', endPointer); canvas.addEventListener('pointercancel', endPointer); canvas.addEventListener('pointerleave', endPointer);
+
+document.getElementById('tipClose').addEventListener('click', ()=>{ document.getElementById('tipBubble').style.display='none'; });
+
+// ---------- 用途・予算チップ ----------
+const occRow=document.getElementById('occRow');
+['指定なし', ...OCCASIONS].forEach(label=>{
+  const chip=document.createElement('div'); chip.className='chip'+(label==='指定なし'?' active':'');
+  chip.textContent=label;
+  chip.addEventListener('click', ()=>{
+    selOccasion = (label==='指定なし') ? null : label;
+    occRow.querySelectorAll('.chip').forEach(c=>c.classList.remove('active')); chip.classList.add('active');
+    renderFlowerList();
+  });
+  occRow.appendChild(chip);
+});
+const budgetRow=document.getElementById('budgetRow');
+[{label:'指定なし',value:null}, ...BUDGETS].forEach(b=>{
+  const chip=document.createElement('div'); chip.className='chip'+(b.value===null?' active':'');
+  chip.textContent=b.label;
+  chip.addEventListener('click', ()=>{
+    selBudget=b.value;
+    budgetRow.querySelectorAll('.chip').forEach(c=>c.classList.remove('active')); chip.classList.add('active');
+    updateTotals();
+  });
+  budgetRow.appendChild(chip);
+});
+
+// ---------- カテゴリータブ ----------
+const catRow=document.getElementById('catRow');
+const categories=['すべて', ...new Set(FLOWERS.map(f=>f.category))];
+let activeCat='すべて';
+categories.forEach(cat=>{
+  const chip=document.createElement('div'); chip.className='chip'+(cat===activeCat?' active':'');
+  chip.textContent=cat;
+  chip.addEventListener('click', ()=>{ activeCat=cat; catRow.querySelectorAll('.chip').forEach(c=>c.classList.remove('active')); chip.classList.add('active'); renderFlowerList(); });
+  catRow.appendChild(chip);
+});
+
+const flowerRow=document.getElementById('flowerRow'); const addPanel=document.getElementById('addPanel');
+const previewBox=document.getElementById('previewBox'); const infoName=document.getElementById('infoName');
+const infoPrice=document.getElementById('infoPrice'); const infoMeaning=document.getElementById('infoMeaning');
+const infoKeyword=document.getElementById('infoKeyword'); const addBtn=document.getElementById('addBtn');
+let currentFlowerId=null;
+
+function thumbHTML(f){ return '<div class="thumb"><img src="'+f.img+'" alt="'+f.name+'" loading="lazy" onerror="this.parentElement.innerHTML=\'🌸\'"></div>'; }
+
+function renderFlowerList(){
+  flowerRow.innerHTML='';
+  let list=FLOWERS.filter(f=> activeCat==='すべて' || f.category===activeCat);
+  if(selOccasion){
+    list = [...list].sort((a,b)=>{
+      const am=a.occasions&&a.occasions.includes(selOccasion)?0:1;
+      const bm=b.occasions&&b.occasions.includes(selOccasion)?0:1;
+      return am-bm;
+    });
+  }
+  list.forEach(f=>{
+    const rec = selOccasion && f.occasions && f.occasions.includes(selOccasion);
+    const card=document.createElement('div'); card.className='flower-card'+(f.id===currentFlowerId?' active':''); card.dataset.id=f.id;
+    card.innerHTML = (rec?'<div class="badge">おすすめ</div>':'') + thumbHTML(f)+'<div class="name">'+f.name+'</div><div class="price">¥'+f.price.toLocaleString('ja-JP')+'</div>';
+    card.addEventListener('click', ()=>openAddPanel(f)); flowerRow.appendChild(card);
+  });
+}
+function openAddPanel(f){
+  currentFlowerId=f.id;
+  document.querySelectorAll('.flower-card').forEach(c=>{ c.classList.toggle('active', c.dataset.id===f.id); });
+  previewBox.innerHTML = '<img src="'+f.img+'" alt="'+f.name+'" onerror="this.parentElement.innerHTML=\'🌸\'">';
+  infoName.textContent=f.name; infoPrice.textContent='¥'+f.price.toLocaleString('ja-JP');
+  infoKeyword.textContent=f.keyword||''; infoKeyword.style.display=f.keyword?'inline-block':'none';
+  infoMeaning.textContent=f.meaning;
+  addPanel.classList.add('open'); addPanel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+addBtn.addEventListener('click', ()=>{ if(currentFlowerId) addFlower(currentFlowerId); });
+
+document.getElementById('clearBtn').addEventListener('click', ()=>{ objects=[]; selectedId=null; updateTotals(); render(); });
+document.getElementById('saveBtn').addEventListener('click', ()=>{
+  const wasSelected=selectedId; selectedId=null; render();
+  const url=canvas.toDataURL('image/png'); selectedId=wasSelected; render();
+  const a=document.createElement('a'); a.href=url; a.download='olkapulia-bouquet.png'; a.click();
+});
+
+// ---------- CTA ----------
+function buildSummaryText(){
+  const groups={}; objects.forEach(o=>{ groups[o.flowerId]=(groups[o.flowerId]||0)+1; });
+  const lines=Object.keys(groups).map(id=>{ const f=flowerOf(id); return '・'+f.name+' × '+groups[id]+'（¥'+(f.price*groups[id]).toLocaleString('ja-JP')+'）'; });
+  const total=objects.reduce((s,o)=>s+flowerOf(o.flowerId).price,0);
+  let text = 'O\'lkapulia ブーケシミュレーターで作成しました。\n\n';
+  if(selOccasion) text += '【用途】'+selOccasion+'\n';
+  if(selBudget) text += '【ご予算目安】¥'+selBudget.toLocaleString('ja-JP')+'\n';
+  text += '\n【選んだお花】\n'+(lines.join('\n')||'（未選択）');
+  text += '\n\n【合計目安】¥'+total.toLocaleString('ja-JP');
+  return text;
+}
+document.getElementById('consultBtn').addEventListener('click', ()=>{
+  if(!CONTACT_URL){ toast('相談先URLが未設定です。店舗にお問い合わせください。'); return; }
+  window.open(CONTACT_URL, '_blank');
+});
+document.getElementById('shareBtn').addEventListener('click', async ()=>{
+  const text = buildSummaryText();
+  if(navigator.share){
+    try{ await navigator.share({text}); return; }catch(e){}
+  }
+  try{
+    await navigator.clipboard.writeText(text);
+    toast('コピーしました。LINEやメールに貼り付けてください');
+  }catch(e){
+    toast('コピーに失敗しました');
+  }
+});
+
+renderFlowerList(); resize(); updateTotals();
+</script>
+</body>
+</html>

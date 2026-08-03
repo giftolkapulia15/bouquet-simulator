@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>フラワーエディター | O'lkapulia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ivory:#F6F0E6; --plum:#33222B; --rose-deep:#7B2D3B; --gold:#AD8A55;
+    --line:rgba(51,34,43,0.14); --shadow:0 10px 28px rgba(51,34,43,0.12);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--ivory);color:var(--plum);font-family:'Zen Kaku Gothic New',sans-serif;}
+  .wrap{max-width:640px;margin:0 auto;padding:22px 16px 60px;}
+  h1{font-family:'Shippori Mincho',serif;font-size:24px;text-align:center;margin:6px 0 2px;}
+  .sub{text-align:center;font-size:12.5px;color:#8a7a80;margin-bottom:6px;}
+  .note{
+    background:#fffaf3;border:1px solid var(--line);border-radius:14px;
+    padding:12px 14px;font-size:12.5px;line-height:1.7;color:#5c4a52;margin:18px 0;
+  }
+  .card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:18px;margin-bottom:18px;}
+  .card h2{font-family:'Shippori Mincho',serif;font-size:16px;margin:0 0 14px;}
+  label{display:block;font-size:12px;color:#8a7a80;margin:12px 0 5px;}
+  label:first-of-type{margin-top:0;}
+  input[type=text], input[type=number], textarea, select{
+    width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;
+    font-family:inherit;font-size:14px;background:#fdfaf5;color:var(--plum);
+  }
+  textarea{resize:vertical;min-height:56px;}
+  .photo-row{display:flex;align-items:center;gap:14px;}
+  .photo-preview{
+    width:76px;height:76px;border-radius:12px;flex:0 0 auto;
+    background:radial-gradient(circle at 50% 42%,#fdf7ec,#f1e6d3 78%);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .photo-preview img{width:82%;height:82%;object-fit:contain;}
+  .photo-preview span{font-size:22px;opacity:0.4;}
+  input[type=file]{font-size:12.5px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .actions{display:flex;gap:10px;margin-top:16px;}
+  .btn{flex:1;padding:12px;border:none;border-radius:12px;font-size:13.5px;font-family:inherit;cursor:pointer;letter-spacing:0.03em;}
+  .btn.primary{background:var(--rose-deep);color:#fff;}
+  .btn.ghost{background:#fff;border:1px solid var(--line);color:var(--plum);}
+  .btn:active{opacity:0.85;}
+
+  .list-empty{text-align:center;color:#b3a49a;font-size:13px;padding:24px 0;}
+  .flower-item{
+    display:flex;align-items:center;gap:12px;padding:10px;border:1px solid var(--line);
+    border-radius:14px;margin-bottom:10px;background:#fdfaf5;
+  }
+  .flower-item .th{width:52px;height:52px;border-radius:10px;overflow:hidden;flex:0 0 auto;background:#fff;display:flex;align-items:center;justify-content:center;}
+  .flower-item .th img{width:85%;height:85%;object-fit:contain;}
+  .flower-item .meta{flex:1;min-width:0;}
+  .flower-item .meta .n{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .flower-item .meta .p{font-size:12px;color:var(--gold);}
+  .flower-item .meta .c{font-size:11px;color:#9a8c92;}
+  .flower-item .ops{display:flex;gap:6px;}
+  .icon-btn{
+    width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;
+  }
+
+  .export-bar{display:flex;flex-direction:column;gap:10px;}
+  .export-bar .btn.big{padding:15px;font-size:14.5px;}
+  .count-line{text-align:center;font-size:12px;color:#8a7a80;margin-bottom:8px;}
+  .file-import{font-size:12px;text-align:center;margin-top:6px;}
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%);
+    background:var(--plum);color:#fff;padding:11px 18px;border-radius:999px;font-size:12.5px;
+    opacity:0;transition:opacity .25s ease;pointer-events:none;z-index:99;
+  }
+  .toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>O'lkapulia フラワーエディター</h1>
+  <div class="sub">コードを書かずにシミュレーターの花を編集</div>
+
+  <div class="note">
+    ここでお花を1品種ずつ登録して、最後に「シミュレーターを書き出す」を押すと、
+    写真が組み込まれた <b>bouquet-simulator.html</b> が1ファイルで完成します。
+    それをGitHubにアップロード（上書き）するだけで公開できます。<br>
+    作業途中で終わる場合は「データを保存」でバックアップし、次回「データを読み込む」で続きから編集できます。
+  </div>
+
+  <div class="card" id="formCard">
+    <h2 id="formTitle">お花を追加</h2>
+
+    <label>写真（背景が透明なPNG推奨）</label>
+    <div class="photo-row">
+      <div class="photo-preview" id="photoPreview"><span>🌸</span></div>
+      <input type="file" id="photoInput" accept="image/*">
+    </div>
+
+    <label>カテゴリー（例：バラ／ピオニー／新しい名前もOK）</label>
+    <input type="text" id="catInput" list="catList" placeholder="例：バラ">
+    <datalist id="catList"></datalist>
+
+    <label>商品名</label>
+    <input type="text" id="nameInput" placeholder="例：バラ（ワインレッド）">
+
+    <div class="grid2">
+      <div>
+        <label>価格（円）</label>
+        <input type="number" id="priceInput" placeholder="850">
+      </div>
+      <div>
+        <label>表示サイズ</label>
+        <select id="sizeInput">
+          <option value="90">小（かすみ草など）</option>
+          <option value="120" selected>中（バラなど）</option>
+          <option value="150">大（ピオニーなど）</option>
+        </select>
+      </div>
+    </div>
+
+    <label>花言葉（オリジナルでOK）</label>
+    <textarea id="meaningInput" placeholder="例：あなたを大切に想っています"></textarea>
+
+    <div class="actions">
+      <button class="btn ghost" id="cancelEditBtn" style="display:none;">キャンセル</button>
+      <button class="btn primary" id="submitBtn">追加する</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>登録済みのお花</h2>
+    <div class="count-line" id="countLine">0件</div>
+    <div id="flowerList"><div class="list-empty">まだお花が登録されていません</div></div>
+  </div>
+
+  <div class="card export-bar">
+    <h2>書き出し・保存</h2>
+    <button class="btn primary big" id="exportHtmlBtn">シミュレーターを書き出す（.html）</button>
+    <button class="btn ghost" id="exportJsonBtn">データを保存（.json）</button>
+    <button class="btn ghost" id="importJsonBtn">データを読み込む（.json）</button>
+    <input type="file" id="importFile" accept="application/json" style="display:none;">
+    <div class="file-import">※ .jsonはバックアップ用です。GitHubには.htmlの方をアップロードしてください</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ============================================================
+     シミュレーター本体のテンプレート（実行はされません）
+     書き出し時にこの中身を読み込み、花データを差し込んで
+     bouquet-simulator.html として保存します。
+============================================================ -->
+<script type="text/plain" id="simTemplate">
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ブーケシミュレーター | O'lkapulia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&family=Shippori+Mincho:wght@500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ivory:#F6F0E6; --ivory-deep:#EFE3D0; --plum:#33222B; --plum-soft:#4A3540;
+    --rose-deep:#7B2D3B; --gold:#AD8A55; --gold-soft:rgba(173,138,85,0.35);
+    --line:rgba(51,34,43,0.13); --shadow: 0 12px 34px rgba(51,34,43,0.14);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:radial-gradient(1200px 520px at 50% -12%, #fffaf1 0%, var(--ivory) 55%),var(--ivory);color:var(--plum);font-family:'Zen Kaku Gothic New', sans-serif;-webkit-tap-highlight-color: transparent;}
+  .app{max-width:960px;margin:0 auto;padding:22px 16px 44px;}
+  header.brand{text-align:center;padding:8px 0 20px;}
+  header.brand .mark{font-family:'Shippori Mincho', serif;font-size:31px;letter-spacing:0.06em;color:var(--plum);}
+  header.brand .mark em{font-style:normal;color:var(--rose-deep);}
+  header.brand .tag{margin-top:7px;font-size:12px;letter-spacing:0.16em;color:#8a7a80;}
+  header.brand .rule{width:70px;height:1px;background:var(--gold);margin:15px auto 0;opacity:0.75;}
+  .stage-wrap{position:relative; border-radius:24px;background:radial-gradient(circle at 50% 34%, rgba(255,255,255,0.95), rgba(255,255,255,0) 62%),linear-gradient(180deg, #fffdf9, #f2e8d7);box-shadow: var(--shadow), inset 0 0 0 1px var(--line);overflow:hidden;}
+  #stage{display:block;width:100%;height:54vh;min-height:340px;max-height:520px;touch-action:none;}
+  .hint{position:absolute; left:14px; bottom:12px; font-size:11px; color:#9a8c92;background:rgba(255,255,255,0.6); backdrop-filter: blur(3px);padding:6px 10px; border-radius:20px; line-height:1.5; pointer-events:none;}
+  .price-tag{position:absolute; top:14px; right:14px; display:flex; flex-direction:column; align-items:flex-end;background:#fffaf3; border:1px dashed var(--gold-soft); border-radius:2px 14px 14px 14px;box-shadow: var(--shadow); padding:10px 16px; pointer-events:none;}
+  .price-tag .label{font-size:10px;letter-spacing:0.14em;color:#9a8c92;}
+  .price-tag .value{font-family:'Shippori Mincho',serif;font-size:21px;color:var(--rose-deep);margin-top:1px;}
+  .empty-msg{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); text-align:center; color:#b3a49a; font-size:13px; letter-spacing:0.05em; pointer-events:none;}
+  .toolbar{display:flex; gap:8px; justify-content:flex-end; margin:12px 2px 4px;}
+  .btn{font-family:'Zen Kaku Gothic New';font-size:12.5px;letter-spacing:0.04em;border:1px solid var(--line);background:#fff;color:var(--plum);padding:8px 14px;border-radius:999px;cursor:pointer;transition:transform .12s ease, background .12s ease;}
+  .btn:hover{background:var(--ivory-deep);}
+  .btn:active{transform:scale(0.96);}
+  .btn.primary{background:var(--plum);color:#fff;border-color:var(--plum);}
+  .cat-row{display:flex;gap:8px;overflow-x:auto;padding:18px 2px 6px;}
+  .cat-row::-webkit-scrollbar{display:none;}
+  .chip{flex:0 0 auto; padding:7px 16px; border-radius:999px; font-size:12px; letter-spacing:0.04em;border:1px solid var(--line); background:#fff; color:var(--plum-soft); cursor:pointer; white-space:nowrap;}
+  .chip.active{background:var(--plum); color:#fff; border-color:var(--plum);}
+  .panel h2{font-family:'Shippori Mincho', serif;font-weight:600;font-size:15px;margin:6px 0 10px 4px;color:var(--plum);letter-spacing:0.04em;}
+  .flower-row{display:flex;gap:12px;overflow-x:auto;padding:4px 4px 12px;scroll-snap-type:x proximity;}
+  .flower-row::-webkit-scrollbar{height:5px;}
+  .flower-row::-webkit-scrollbar-thumb{background:var(--line);border-radius:10px;}
+  .flower-card{flex:0 0 auto; width:104px; scroll-snap-align:start; border:1px solid var(--line); border-radius:16px;background:#fff; padding:10px 8px 9px; text-align:center; cursor:pointer;transition:box-shadow .15s ease, border-color .15s ease, transform .1s ease;}
+  .flower-card:active{transform:scale(0.97);}
+  .flower-card.active{border-color:var(--rose-deep); box-shadow:0 0 0 2px rgba(123,45,59,0.12);}
+  .thumb{width:100%; aspect-ratio:1/1; border-radius:12px; overflow:hidden;background:radial-gradient(circle at 50% 42%, #fdf7ec, #f1e6d3 78%);display:flex; align-items:center; justify-content:center;}
+  .thumb img{width:82%;height:82%;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(51,34,43,0.16));}
+  .thumb .fallback{font-size:22px; opacity:0.5;}
+  .flower-card .name{font-size:11px;margin-top:6px;line-height:1.3;}
+  .flower-card .price{font-size:10.5px;color:var(--gold);margin-top:2px;}
+  .add-panel{display:none;border:1px solid var(--line);border-radius:18px;background:#fffdf9;padding:16px;margin-top:2px;}
+  .add-panel.open{display:flex;gap:16px;flex-wrap:wrap;}
+  .add-panel .preview{width:96px;height:96px;border-radius:14px;flex:0 0 auto;background:radial-gradient(circle at 50% 42%, #fdf7ec, #f1e6d3 78%);display:flex;align-items:center;justify-content:center;}
+  .add-panel .preview img{width:82%;height:82%;object-fit:contain;filter:drop-shadow(0 6px 10px rgba(51,34,43,0.16));}
+  .add-panel .info{flex:1 1 180px;min-width:180px;}
+  .add-panel .info .name{font-family:'Shippori Mincho',serif;font-size:16px;color:var(--plum);}
+  .add-panel .info .price{font-size:13px;color:var(--gold);margin-top:2px;}
+  .meaning-block{margin-top:10px;padding-top:10px;border-top:1px dashed var(--gold-soft);}
+  .meaning-block .label{font-size:10px;letter-spacing:0.18em;color:var(--gold);}
+  .meaning-block .text{font-family:'Cormorant Garamond','Shippori Mincho',serif;font-style:italic;font-size:15.5px;color:var(--plum-soft);margin-top:3px;line-height:1.5;}
+  .add-btn{margin-top:12px;width:100%;padding:11px;border:none;border-radius:12px;background:var(--rose-deep);color:#fff;font-family:'Zen Kaku Gothic New';font-size:13.5px;letter-spacing:0.08em;cursor:pointer;}
+  .add-btn:active{opacity:0.85;}
+  .total-bar{display:flex;justify-content:space-between;align-items:center;margin-top:18px;padding:14px 18px;border-radius:16px;background:var(--plum);color:#fff;}
+  .total-bar .l{font-size:12px;letter-spacing:0.12em;color:#cbb9c0;}
+  .total-bar .v{font-family:'Shippori Mincho',serif;font-size:24px;margin-top:2px;}
+  .total-bar .count{font-size:11.5px;color:#cbb9c0;}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="brand">
+    <div class="mark">O'lkapulia<em>.</em></div>
+    <div class="tag">枯れない花束 — BOUQUET SIMULATOR</div>
+    <div class="rule"></div>
+  </header>
+  <div class="stage-wrap">
+    <canvas id="stage"></canvas>
+    <div class="price-tag"><div class="label">TOTAL</div><div class="value" id="tagPrice">¥0</div></div>
+    <div class="empty-msg" id="emptyMsg">下のリストからお花を選んで<br>ブーケを作りましょう</div>
+    <div class="hint">1本指でドラッグ移動 ・ 2本指でひねって回転（PCはハンドルをドラッグ）</div>
+  </div>
+  <div class="toolbar">
+    <button class="btn" id="clearBtn">リセット</button>
+    <button class="btn primary" id="saveBtn">画像を保存</button>
+  </div>
+  <div class="cat-row" id="catRow"></div>
+  <div class="panel">
+    <h2>— お花を選ぶ —</h2>
+    <div class="flower-row" id="flowerRow"></div>
+    <div class="add-panel" id="addPanel">
+      <div class="preview" id="previewBox"></div>
+      <div class="info">
+        <div class="name" id="infoName"></div>
+        <div class="price" id="infoPrice"></div>
+        <div class="meaning-block">
+          <div class="label">HANAKOTOBA</div>
+          <div class="text" id="infoMeaning"></div>
+        </div>
+        <button class="add-btn" id="addBtn">ブーケに追加する</button>
+      </div>
+    </div>
+  </div>
+  <div class="total-bar">
+    <div><div class="l">お見積り合計</div><div class="count" id="countLine">0点のお花</div></div>
+    <div class="v" id="totalPrice">¥0</div>
+  </div>
+</div>
+<script>
+const FLOWERS = /*__DATA__*/[];
+const imgCache = {};
+function loadImg(src){ if(imgCache[src]) return imgCache[src]; const im=new Image(); im.src=src; im.loaded=false; im.failed=false; im.onload=()=>{im.loaded=true; render();}; im.onerror=()=>{im.failed=true;}; imgCache[src]=im; return im; }
+FLOWERS.forEach(f=> loadImg(f.img));
+const canvas = document.getElementById('stage'); const ctx = canvas.getContext('2d'); let W=0,H=0;
+function resize(){ const rect=canvas.getBoundingClientRect(); const dpr=window.devicePixelRatio||1; canvas.width=rect.width*dpr; canvas.height=rect.height*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); W=rect.width; H=rect.height; render(); }
+window.addEventListener('resize', resize);
+let objects=[]; let nextId=1; let selectedId=null;
+function flowerOf(id){ return FLOWERS.find(f=>f.id===id); }
+function addFlower(flowerId){ const f=flowerOf(flowerId); const n=objects.length; const obj={id:nextId++, flowerId, x:W/2+((n%5)-2)*16, y:H/2+Math.floor(n/5)*16-20, rotation:(Math.random()*0.5-0.25), size:f.size}; objects.push(obj); selectedId=obj.id; updateTotals(); render(); }
+function removeFlower(id){ objects=objects.filter(o=>o.id!==id); if(selectedId===id) selectedId=null; updateTotals(); render(); }
+function updateTotals(){ const total=objects.reduce((s,o)=>s+flowerOf(o.flowerId).price,0); const fmt=v=>'¥'+v.toLocaleString('ja-JP'); document.getElementById('tagPrice').textContent=fmt(total); document.getElementById('totalPrice').textContent=fmt(total); document.getElementById('countLine').textContent=objects.length+'点のお花'; document.getElementById('emptyMsg').style.display=objects.length?'none':'block'; }
+function handlePos(o){ const dist=o.size/2+24; const a=o.rotation-Math.PI/2; return {x:o.x+Math.cos(a)*dist, y:o.y+Math.sin(a)*dist}; }
+function deletePos(o){ return {x:o.x+o.size*0.34, y:o.y-o.size*0.34}; }
+function render(){
+  ctx.clearRect(0,0,W,H);
+  ctx.save(); ctx.strokeStyle='rgba(180,150,130,0.18)'; ctx.setLineDash([4,5]); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(W/2,H/2-10,Math.min(W,H)*0.34,0,Math.PI*2); ctx.stroke(); ctx.restore();
+  objects.forEach(o=>{
+    const f=flowerOf(o.flowerId); const im=imgCache[f.img];
+    ctx.save(); ctx.translate(o.x,o.y); ctx.rotate(o.rotation);
+    if(im && im.loaded){ const ratio=im.naturalWidth/im.naturalHeight; let w=o.size,h=o.size/ratio; if(h>o.size){h=o.size; w=o.size*ratio;} ctx.drawImage(im,-w/2,-h/2,w,h); }
+    else { ctx.setLineDash([3,4]); ctx.strokeStyle='rgba(123,45,59,0.35)'; ctx.beginPath(); ctx.arc(0,0,o.size/2,0,Math.PI*2); ctx.stroke(); ctx.fillStyle='rgba(123,45,59,0.45)'; ctx.font='11px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('写真未設定',0,0); }
+    ctx.restore();
+  });
+  const sel=objects.find(o=>o.id===selectedId);
+  if(sel){
+    ctx.save(); ctx.strokeStyle='rgba(123,45,59,0.55)'; ctx.setLineDash([3,4]); ctx.lineWidth=1.3;
+    ctx.beginPath(); ctx.arc(sel.x,sel.y,sel.size/2+10,0,Math.PI*2); ctx.stroke(); ctx.restore();
+    const hp=handlePos(sel);
+    ctx.save(); ctx.strokeStyle='rgba(123,45,59,0.4)'; ctx.setLineDash([2,3]);
+    ctx.beginPath(); ctx.moveTo(sel.x,sel.y); ctx.lineTo(hp.x,hp.y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(hp.x,hp.y,8,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill(); ctx.strokeStyle='#7B2D3B'; ctx.lineWidth=1.5; ctx.stroke(); ctx.restore();
+    const dp=deletePos(sel);
+    ctx.save(); ctx.beginPath(); ctx.arc(dp.x,dp.y,9,0,Math.PI*2); ctx.fillStyle='#33222B'; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.moveTo(dp.x-3.5,dp.y-3.5); ctx.lineTo(dp.x+3.5,dp.y+3.5); ctx.moveTo(dp.x+3.5,dp.y-3.5); ctx.lineTo(dp.x-3.5,dp.y+3.5); ctx.stroke(); ctx.restore();
+  }
+}
+function dist(x1,y1,x2,y2){ return Math.hypot(x1-x2,y1-y2); }
+function hitTest(px,py){
+  const sel=objects.find(o=>o.id===selectedId);
+  if(sel){ const dp=deletePos(sel); if(dist(px,py,dp.x,dp.y)<12) return {kind:'delete',obj:sel}; const hp=handlePos(sel); if(dist(px,py,hp.x,hp.y)<14) return {kind:'rotate',obj:sel}; }
+  for(let i=objects.length-1;i>=0;i--){ const o=objects[i]; if(dist(px,py,o.x,o.y)<o.size/2) return {kind:'move',obj:o}; }
+  return null;
+}
+function pointerPos(e){ const rect=canvas.getBoundingClientRect(); return {x:e.clientX-rect.left, y:e.clientY-rect.top}; }
+const active=new Map(); let mode=null; let dragOffset={x:0,y:0}; let pinchStartAngle=0, pinchStartRotation=0;
+canvas.addEventListener('pointerdown', e=>{
+  canvas.setPointerCapture(e.pointerId); const p=pointerPos(e); active.set(e.pointerId,p);
+  if(active.size>=2){ const pts=Array.from(active.values()); pinchStartAngle=Math.atan2(pts[1].y-pts[0].y, pts[1].x-pts[0].x); const sel=objects.find(o=>o.id===selectedId); if(sel){ pinchStartRotation=sel.rotation; mode='pinch'; } return; }
+  const hit=hitTest(p.x,p.y);
+  if(hit && hit.kind==='delete'){ removeFlower(hit.obj.id); mode=null; return; }
+  if(hit && hit.kind==='rotate'){ mode='rotate'; return; }
+  if(hit && hit.kind==='move'){ selectedId=hit.obj.id; objects=objects.filter(o=>o!==hit.obj); objects.push(hit.obj); dragOffset={x:p.x-hit.obj.x, y:p.y-hit.obj.y}; mode='move'; }
+  else { selectedId=null; mode=null; }
+  render();
+});
+canvas.addEventListener('pointermove', e=>{
+  if(!active.has(e.pointerId)) return; const p=pointerPos(e); active.set(e.pointerId,p);
+  if(mode==='pinch' && active.size>=2){ const pts=Array.from(active.values()); const angle=Math.atan2(pts[1].y-pts[0].y, pts[1].x-pts[0].x); const sel=objects.find(o=>o.id===selectedId); if(sel){ sel.rotation=pinchStartRotation+(angle-pinchStartAngle); render(); } return; }
+  const sel=objects.find(o=>o.id===selectedId);
+  if(mode==='move' && sel){ sel.x=p.x-dragOffset.x; sel.y=p.y-dragOffset.y; render(); }
+  else if(mode==='rotate' && sel){ sel.rotation=Math.atan2(p.y-sel.y, p.x-sel.x)+Math.PI/2; render(); }
+});
+function endPointer(e){ active.delete(e.pointerId); if(active.size<2) mode = active.size===1 ? mode : null; }
+canvas.addEventListener('pointerup', endPointer); canvas.addEventListener('pointercancel', endPointer); canvas.addEventListener('pointerleave', endPointer);
+const catRow=document.getElementById('catRow'); const categories=['すべて', ...new Set(FLOWERS.map(f=>f.category))]; let activeCat='すべて';
+categories.forEach(cat=>{ const chip=document.createElement('div'); chip.className='chip'+(cat===activeCat?' active':''); chip.textContent=cat; chip.addEventListener('click', ()=>{ activeCat=cat; catRow.querySelectorAll('.chip').forEach(c=>c.classList.remove('active')); chip.classList.add('active'); renderFlowerList(); }); catRow.appendChild(chip); });
+const flowerRow=document.getElementById('flowerRow'); const addPanel=document.getElementById('addPanel'); const previewBox=document.getElementById('previewBox'); const infoName=document.getElementById('infoName'); const infoPrice=document.getElementById('infoPrice'); const infoMeaning=document.getElementById('infoMeaning'); const addBtn=document.getElementById('addBtn'); let currentFlowerId=null;
+function thumbHTML(f){ return '<div class="thumb"><img src="'+f.img+'" alt="'+f.name+'" loading="lazy" onerror="this.parentElement.innerHTML=\'<span class=&quot;fallback&quot;>🌸</span>\'"></div>'; }
+function renderFlowerList(){
+  flowerRow.innerHTML='';
+  const list=FLOWERS.filter(f=> activeCat==='すべて' || f.category===activeCat);
+  list.forEach(f=>{
+    const card=document.createElement('div'); card.className='flower-card'+(f.id===currentFlowerId?' active':''); card.dataset.id=f.id;
+    card.innerHTML = thumbHTML(f)+'<div class="name">'+f.name+'</div><div class="price">¥'+f.price.toLocaleString('ja-JP')+'</div>';
+    card.addEventListener('click', ()=>openAddPanel(f)); flowerRow.appendChild(card);
+  });
+}
+function openAddPanel(f){
+  currentFlowerId=f.id;
+  document.querySelectorAll('.flower-card').forEach(c=>{ c.classList.toggle('active', c.dataset.id===f.id); });
+  previewBox.innerHTML = '<img src="'+f.img+'" alt="'+f.name+'" onerror="this.parentElement.innerHTML=\'<span class=&quot;fallback&quot;>🌸</span>\'">';
+  infoName.textContent=f.name; infoPrice.textContent='¥'+f.price.toLocaleString('ja-JP'); infoMeaning.textContent=f.meaning;
+  addPanel.classList.add('open'); addPanel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+addBtn.addEventListener('click', ()=>{ if(currentFlowerId) addFlower(currentFlowerId); });
+document.getElementById('clearBtn').addEventListener('click', ()=>{ objects=[]; selectedId=null; updateTotals(); render(); });
+document.getElementById('saveBtn').addEventListener('click', ()=>{
+  const wasSelected=selectedId; selectedId=null; render();
+  const url=canvas.toDataURL('image/png'); selectedId=wasSelected; render();
+  const a=document.createElement('a'); a.href=url; a.download='olkapulia-bouquet.png'; a.click();
+});
+renderFlowerList(); resize(); updateTotals();
+<\/script>
+</body>
+</html>
+</script>
+
+<script>
+/* ================= フラワーエディター本体のロジック ================= */
+let flowers = [];
+let currentPhotoData = null;
+let editingId = null;
+
+const photoInput = document.getElementById('photoInput');
+const photoPreview = document.getElementById('photoPreview');
+const catInput = document.getElementById('catInput');
+const nameInput = document.getElementById('nameInput');
+const priceInput = document.getElementById('priceInput');
+const sizeInput = document.getElementById('sizeInput');
+const meaningInput = document.getElementById('meaningInput');
+const submitBtn = document.getElementById('submitBtn');
+const cancelEditBtn = document.getElementById('cancelEditBtn');
+const formTitle = document.getElementById('formTitle');
+const flowerListEl = document.getElementById('flowerList');
+const countLine = document.getElementById('countLine');
+const catList = document.getElementById('catList');
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2200);
+}
+
+// 写真を選んだら、長辺700pxに縮小してPNG(透過)として取り込む
+photoInput.addEventListener('change', ()=>{
+  const file = photoInput.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const maxDim = 700;
+      const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight));
+      const w = Math.round(img.naturalWidth*scale), h = Math.round(img.naturalHeight*scale);
+      const c = document.createElement('canvas'); c.width=w; c.height=h;
+      const cx = c.getContext('2d');
+      cx.drawImage(img,0,0,w,h);
+      currentPhotoData = c.toDataURL('image/png');
+      photoPreview.innerHTML = '<img src="'+currentPhotoData+'">';
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+});
+
+function resetForm(){
+  currentPhotoData = null;
+  photoInput.value = '';
+  photoPreview.innerHTML = '<span>🌸</span>';
+  catInput.value = '';
+  nameInput.value = '';
+  priceInput.value = '';
+  sizeInput.value = '120';
+  meaningInput.value = '';
+  editingId = null;
+  formTitle.textContent = 'お花を追加';
+  submitBtn.textContent = '追加する';
+  cancelEditBtn.style.display = 'none';
+}
+
+submitBtn.addEventListener('click', ()=>{
+  if(!currentPhotoData){ toast('写真を選んでください'); return; }
+  if(!nameInput.value.trim()){ toast('商品名を入力してください'); return; }
+  if(!priceInput.value){ toast('価格を入力してください'); return; }
+
+  const data = {
+    id: editingId || ('f_'+Date.now()+'_'+Math.floor(Math.random()*1000)),
+    category: catInput.value.trim() || 'その他',
+    name: nameInput.value.trim(),
+    price: parseInt(priceInput.value,10) || 0,
+    size: parseInt(sizeInput.value,10),
+    meaning: meaningInput.value.trim() || 'ー',
+    img: currentPhotoData
+  };
+
+  if(editingId){
+    const idx = flowers.findIndex(f=>f.id===editingId);
+    if(idx>-1) flowers[idx] = data;
+    toast('更新しました');
+  } else {
+    flowers.push(data);
+    toast('追加しました');
+  }
+  resetForm();
+  renderList();
+});
+
+cancelEditBtn.addEventListener('click', resetForm);
+
+function renderList(){
+  countLine.textContent = flowers.length + '件';
+  if(flowers.length===0){
+    flowerListEl.innerHTML = '<div class="list-empty">まだお花が登録されていません</div>';
+  } else {
+    flowerListEl.innerHTML = '';
+    flowers.forEach(f=>{
+      const row = document.createElement('div');
+      row.className = 'flower-item';
+      row.innerHTML = `
+        <div class="th"><img src="${f.img}"></div>
+        <div class="meta">
+          <div class="n">${f.name}</div>
+          <div class="p">¥${f.price.toLocaleString('ja-JP')}</div>
+          <div class="c">${f.category}</div>
+        </div>
+        <div class="ops">
+          <div class="icon-btn" data-act="edit" data-id="${f.id}">✎</div>
+          <div class="icon-btn" data-act="del" data-id="${f.id}">×</div>
+        </div>
+      `;
+      flowerListEl.appendChild(row);
+    });
+  }
+  catList.innerHTML = '';
+  [...new Set(flowers.map(f=>f.category))].forEach(c=>{
+    const opt = document.createElement('option'); opt.value=c; catList.appendChild(opt);
+  });
+}
+
+flowerListEl.addEventListener('click', e=>{
+  const btn = e.target.closest('.icon-btn');
+  if(!btn) return;
+  const id = btn.dataset.id;
+  if(btn.dataset.act === 'del'){
+    if(confirm('このお花を削除しますか？')){
+      flowers = flowers.filter(f=>f.id!==id);
+      renderList();
+    }
+  } else if(btn.dataset.act === 'edit'){
+    const f = flowers.find(f=>f.id===id);
+    if(!f) return;
+    editingId = f.id;
+    currentPhotoData = f.img;
+    photoPreview.innerHTML = '<img src="'+f.img+'">';
+    catInput.value = f.category;
+    nameInput.value = f.name;
+    priceInput.value = f.price;
+    sizeInput.value = f.size;
+    meaningInput.value = f.meaning;
+    formTitle.textContent = 'お花を編集';
+    submitBtn.textContent = '更新する';
+    cancelEditBtn.style.display = 'block';
+    document.getElementById('formCard').scrollIntoView({behavior:'smooth'});
+  }
+});
+
+document.getElementById('exportJsonBtn').addEventListener('click', ()=>{
+  if(flowers.length===0){ toast('お花がまだありません'); return; }
+  const blob = new Blob([JSON.stringify(flowers, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'olkapulia-flowers.json';
+  a.click();
+});
+
+document.getElementById('importJsonBtn').addEventListener('click', ()=>{
+  document.getElementById('importFile').click();
+});
+document.getElementById('importFile').addEventListener('change', ()=>{
+  const file = document.getElementById('importFile').files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      if(!Array.isArray(data)) throw new Error('invalid');
+      flowers = data;
+      renderList();
+      toast('読み込みました');
+    }catch(err){
+      toast('ファイルを読み込めませんでした');
+    }
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById('exportHtmlBtn').addEventListener('click', ()=>{
+  if(flowers.length===0){ toast('お花を1つ以上追加してください'); return; }
+  let tpl = document.getElementById('simTemplate').textContent;
+  tpl = tpl.split('<\\/script>').join('</script>');
+  const dataJson = JSON.stringify(flowers);
+  tpl = tpl.replace('/*__DATA__*/[]', dataJson);
+  const blob = new Blob([tpl], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'bouquet-simulator.html';
+  a.click();
+  toast('書き出しました');
+});
+
+renderList();
+</script>
+</body>
+</html>

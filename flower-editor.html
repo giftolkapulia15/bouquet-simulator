@@ -318,6 +318,7 @@ const BUDGETS = [
   {label:'¥30,000前後', value:30000},
 ];
 const FLOWERS = /*__DATA__*/[];
+const DISPLAY_SCALE = 1.5; // 花の表示サイズを一括で調整したい場合はこの数値を変更（1.0=元のサイズ）
 
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2400); }
 const imgCache = {};
@@ -328,7 +329,7 @@ function resize(){ const rect=canvas.getBoundingClientRect(); const dpr=window.d
 window.addEventListener('resize', resize);
 let objects=[]; let nextId=1; let selectedId=null; let selOccasion=null, selBudget=null;
 function flowerOf(id){ return FLOWERS.find(f=>f.id===id); }
-function addFlower(flowerId){ const f=flowerOf(flowerId); const n=objects.length; const obj={id:nextId++, flowerId, x:W/2+((n%5)-2)*16, y:H/2+Math.floor(n/5)*16-20, rotation:(Math.random()*0.5-0.25), size:f.size}; objects.push(obj); selectedId=obj.id; updateTotals(); render(); }
+function addFlower(flowerId){ const f=flowerOf(flowerId); const n=objects.length; const obj={id:nextId++, flowerId, x:W/2+((n%5)-2)*16, y:H/2+Math.floor(n/5)*16-20, rotation:(Math.random()*0.5-0.25), size:f.size*DISPLAY_SCALE}; objects.push(obj); selectedId=obj.id; updateTotals(); render(); }
 function removeFlower(id){ objects=objects.filter(o=>o.id!==id); if(selectedId===id) selectedId=null; updateTotals(); render(); }
 function removeOneOf(flowerId){ for(let i=objects.length-1;i>=0;i--){ if(objects[i].flowerId===flowerId){ objects.splice(i,1); break; } } updateTotals(); render(); }
 function updateTotals(){
@@ -356,7 +357,11 @@ function updateTotals(){
   }
   const mc=document.getElementById('meaningCard');
   if(ids.length===0){ mc.classList.remove('show'); } else {
-    const kws=[...new Set(ids.map(id=>flowerOf(id).keyword).filter(Boolean))];
+    const kws=[];
+    ids.forEach(id=>{
+      const raw = flowerOf(id).keyword || '';
+      raw.split(/[・、,，\s]+/).map(s=>s.trim()).filter(Boolean).forEach(w=>{ if(!kws.includes(w)) kws.push(w); });
+    });
     document.getElementById('meaningText').textContent = kws.join('・')+'を込めたブーケです。';
     mc.classList.add('show');
   }
